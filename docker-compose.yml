@@ -1,0 +1,15 @@
+version: '3' # Specify the docker-compose version
+
+services:
+  # Define your services here
+  pgai_demo:
+    image: pgai:latest # Name and tag of the Docker image
+
+    # Optional configurations
+    ports:
+      - "5432:5432"  # Map host ports to container ports
+    volumes:
+      - ./data:/var/lib/postgresql/data
+      - ./scripts:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_PASSWORD=postgres # Set environment variables for the container
