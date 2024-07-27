@@ -1,12 +1,44 @@
+-- The demo of AI RAG by generate a why customer don't like pizza report.
+--
+-- The input is 3 records of customer comments to pizza food
+-- the output is ai result table with 3 columns:send_message, chat_completion,  final_report
+--    the final report columns is markdown formated business analysis report to why customer don't like pizza
+
+-- the process/tools:
+	--- vector database: pgai container for run an store the input, output data
+    --- ai model service: openai 'gpt-4o-mini','text-embedding-3-small'
+    --- the rag concept of process
+
+-- step 0. Check environments(disabled by default)
+-- make sure pgai docker is running normally
+-- check openai connection
+--select * from openai_list_models()  olm
+--where id in ('gpt-4o-mini','text-embedding-3-small');
+--
+---- check the gpt-4o-mini , text-embedding-3-smal work well.
+--with 
+--tmp as (select 'what is your name?' as message )
+--, test_result as (
+--	select
+--		message, 
+--		openai_chat_complete(
+--			'gpt-4o-mini',
+--			jsonb_build_array(
+--				jsonb_build_object('role', 'user', 'content', message)
+--			)) as chat, 
+--		openai_embed('text-embedding-3-small',message) as embed
+--	from tmp)
+--select * from test_result;
+
 -- Step 1. Preconfig & Check environment
 -- clean the history test table
-drop table if exists  public.t_demo_text_v1 cascade;   -- customer feedback stored here
-drop table if exists public.t_embeddings_v1 cascade;  -- customer feedback embedded 
-drop table if exists  public.t_ai_report cascade;      -- the ai generated business report
+DROP TABLE IF EXISTS  PUBLIC.T_DEMO_TEXT_V1 CASCADE;   -- CUSTOMER FEEDBACK STORED HERE
+DROP TABLE IF EXISTS PUBLIC.T_EMBEDDINGS_V1 CASCADE;  -- CUSTOMER FEEDBACK EMBEDDED 
+DROP TABLE IF EXISTS  PUBLIC.T_AI_REPORT CASCADE;      -- THE AI GENERATED BUSINESS REPORT
 
--- make sure pgai docker is running normally
+
 CREATE EXTENSION IF NOT EXISTS ai CASCADE;
-create extension if not exists vector ;
+
 
 -- use openai-4o-mini and text-embedding-3-small models for demo purpose. You can use local ollama based on business case
 -- make sure the model connection and availability
@@ -14,24 +46,7 @@ create extension if not exists vector ;
 set ai.openai_api_key = 'replace you api key here or use pgai default api_key environment';
 select pg_catalog.current_setting('ai.openai_api_key', true) as api_key;
 
--- check openai connection
-select * from openai_list_models()  olm
-where id in ('gpt-4o-mini','text-embedding-3-small');
 
--- check the gpt-4o-mini , text-embedding-3-smal work well.
-with 
-tmp as (select 'what is your name?' as message )
-, test_result as (
-	select
-		message, 
-		openai_chat_complete(
-			'gpt-4o-mini',
-			jsonb_build_array(
-				jsonb_build_object('role', 'user', 'content', message)
-			)) as chat, 
-		openai_embed('text-embedding-3-small',message) as embed
-	from tmp)
-select * from test_result;
 
 
 ---- step 2 create customer feedback data table and insert the demo data.
@@ -60,7 +75,7 @@ text_content text NOT NULL, -- it is same as t_demo_text_v1
 model_name text NOT NULL,
 ntoken int4 NULL,
 nlength int4 NULL,
-embedding public.vector NOT NULL,
+embedding public.vector(1536) NOT NULL,
 CONSTRAINT t_embeddings_v1_pkey PRIMARY KEY (id)
 );
 
@@ -86,9 +101,8 @@ insert into t_embeddings_v1
 		tmp;
 
 --- create index for query speed optimization. It is optional for small data demo 
--- CREATE INDEX ON t_embeddings_v1 USING ivfflat (embedding vector_cosine_ops) WITH (lists='5');
--- for unknow reason, I can not build index this time. It report Error: column does not have dimensions. 
--- as small data, skip the index part at this moment
+CREATE INDEX ON t_embeddings_v1 USING ivfflat (embedding vector_cosine_ops) WITH (lists='5');
+-- If encountered problem similar to  Error: column does not have dimensions, pls comments the create index part as the demo data is small.
 	
 ----------------------------------------------------------------------------------
 -- step 4. Using AI chat_completion and Database to fast answer busines Question
@@ -184,4 +198,8 @@ select
 	now() as create_time
 into t_ai_report
 from ai_report;
-select * from t_ai_report
+
+SELECT 
+	send_message, chat_completion,  final_report
+from t_ai_report
+
