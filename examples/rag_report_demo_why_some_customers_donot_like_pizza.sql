@@ -2,7 +2,7 @@
 --
 -- The input is 3 records of customer comments to pizza food
 -- the output is ai result table with 3 columns:send_message, chat_completion,  final_report
---    the final report columns is markdown formated business analysis report to why customer don't like pizza
+--    the final report columns is markdown formatted business analysis report to why customer don't like pizza
 
 -- the process/tools:
 	--- vector database: pgai container for run an store the input, output data
