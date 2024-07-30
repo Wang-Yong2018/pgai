@@ -138,7 +138,7 @@ limit 3;
 
 
 ----------------------------------------------------------------------------------
--- step 5. Final step, let geneate a nice business report based on above finding by chat_completion
+-- step 5. Final step, lets generate a nice business report based on above finding by chat_completion
 ----------------------------------------------------------------------------------
 with
 business_question as (
