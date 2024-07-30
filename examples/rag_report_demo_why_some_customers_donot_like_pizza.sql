@@ -1,6 +1,8 @@
-<<<<<<< HEAD
+
+----------------------------------------------------------------------------------
+-- Introduction
+----------------------------------------------------------------------------------
 -- The demo of AI RAG by generate a why customer don't like pizza report.
---
 -- The input is 3 records of customer comments to pizza food
 -- the output is ai result table with 3 columns:send_message, chat_completion,  final_report
 -- the final report columns are markdown formatted business analysis report to why customer don't like pizza
@@ -10,15 +12,16 @@
     --- ai model service: openai 'gpt-4o-mini','text-embedding-3-small'
     --- the RAG concept of the process
 
+
+----------------------------------------------------------------------------------
 -- Step 1. Preconfig & Check environment
+----------------------------------------------------------------------------------
 -- clean the history test table
 DROP TABLE IF EXISTS  PUBLIC.T_DEMO_TEXT_V1 CASCADE;   -- CUSTOMER FEEDBACK STORED HERE
 DROP TABLE IF EXISTS PUBLIC.T_EMBEDDINGS_V1 CASCADE;  -- CUSTOMER FEEDBACK EMBEDDED 
 DROP TABLE IF EXISTS  PUBLIC.T_AI_REPORT CASCADE;      -- THE AI GENERATED BUSINESS REPORT
 
-
 CREATE EXTENSION IF NOT EXISTS ai CASCADE;
-
 
 -- use openai-4o-mini and text-embedding-3-small models for demo purpose. You can use local ollama based on business case
 -- make sure the model connection and availability
@@ -27,9 +30,10 @@ set ai.openai_api_key = 'replace you api key here or use pgai default api_key en
 select pg_catalog.current_setting('ai.openai_api_key', true) as api_key;
 
 
-
-
+----------------------------------------------------------------------------------
 ---- step 2 create customer feedback data table and insert the demo data.
+----------------------------------------------------------------------------------
+
 --- the original customer feedback message to food 
 CREATE TABLE public.t_demo_text_v1 (
 id bigserial NOT NULL,
@@ -38,6 +42,7 @@ customer_message text NULL,
 text_length INTEGER GENERATED ALWAYS AS (LENGTH(customer_message)) stored,
 CONSTRAINT t_demo_text_v1_pkey PRIMARY KEY (id)
 );
+
 --- insert data of t_demo_text_v1
 INSERT INTO public.t_demo_text_v1 (title,customer_message) VALUES
 	 ('Review pizza','The best pizza I''ve ever eaten. The sauce was so tangy!'),
@@ -62,7 +67,6 @@ CONSTRAINT t_embeddings_v1_pkey PRIMARY KEY (id)
 ----------------------------------------------------------------------------------
 -- step 3. Convert the original customer message to food into vector
 ----------------------------------------------------------------------------------
-
 -- get embedding result and insert into the embedding table 
 with tmp as (
 select
@@ -81,14 +85,15 @@ insert into t_embeddings_v1
 
 --- create index for query speed optimization. It is optional for small data demo 
 CREATE INDEX ON t_embeddings_v1 USING ivfflat (embedding vector_cosine_ops) WITH (lists='5');
--- If encountered problem similar to  Error: column does not have dimensions, pls comments the create index part as the demo data is small.
 	
+
 ----------------------------------------------------------------------------------
 -- step 4. Using AI chat_completion and Database to fast answer busines Question
+----------------------------------------------------------------------------------
+
 -- After make the history data into vector table, the new business question could be answered via RAG mod
 -- RAG mean convert question to vector and compare it to history data which vectored, find the most similar record.
 --- and send to chat_completion for generate business insight report.
-----------------------------------------------------------------------------------
 --- show the top3  relevant customer message to business question.
 with
 business_question as (
