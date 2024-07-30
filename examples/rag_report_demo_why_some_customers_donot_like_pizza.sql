@@ -1,34 +1,14 @@
+<<<<<<< HEAD
 -- The demo of AI RAG by generate a why customer don't like pizza report.
 --
 -- The input is 3 records of customer comments to pizza food
 -- the output is ai result table with 3 columns:send_message, chat_completion,  final_report
---    the final report columns is markdown formatted business analysis report to why customer don't like pizza
+-- the final report columns are markdown formatted business analysis report to why customer don't like pizza
 
 -- the process/tools:
 	--- vector database: pgai container for run an store the input, output data
     --- ai model service: openai 'gpt-4o-mini','text-embedding-3-small'
-    --- the rag concept of process
-
--- step 0. Check environments(disabled by default)
--- make sure pgai docker is running normally
--- check openai connection
---select * from openai_list_models()  olm
---where id in ('gpt-4o-mini','text-embedding-3-small');
---
----- check the gpt-4o-mini , text-embedding-3-smal work well.
---with 
---tmp as (select 'what is your name?' as message )
---, test_result as (
---	select
---		message, 
---		openai_chat_complete(
---			'gpt-4o-mini',
---			jsonb_build_array(
---				jsonb_build_object('role', 'user', 'content', message)
---			)) as chat, 
---		openai_embed('text-embedding-3-small',message) as embed
---	from tmp)
---select * from test_result;
+    --- the RAG concept of the process
 
 -- Step 1. Preconfig & Check environment
 -- clean the history test table
@@ -54,18 +34,17 @@ select pg_catalog.current_setting('ai.openai_api_key', true) as api_key;
 CREATE TABLE public.t_demo_text_v1 (
 id bigserial NOT NULL,
 title text NOT NULL,
-url text NULL,
 customer_message text NULL,
 text_length INTEGER GENERATED ALWAYS AS (LENGTH(customer_message)) stored,
 CONSTRAINT t_demo_text_v1_pkey PRIMARY KEY (id)
 );
 --- insert data of t_demo_text_v1
-INSERT INTO public.t_demo_text_v1 (title,url,customer_message) VALUES
-	 ('Review pizza',NULL,'The best pizza I''ve ever eaten. The sauce was so tangy!'),
-	 ('Review pizza',NULL,'The pizza was disgusting. I think the pepperoni was made from rats.'),
-	 ('Review pizza',NULL,'I ordered a hot-dog and was given a pizza, but I ate it anyway.'),
-	 ('Review pizza',NULL,'I hate pineapple on pizza. It is a disgrace. Somehow, it worked well on this izza though.'),
-	 ('Review pizza',NULL,'I ate 11 slices and threw up. The pizza was tasty in both directions.');
+INSERT INTO public.t_demo_text_v1 (title,customer_message) VALUES
+	 ('Review pizza','The best pizza I''ve ever eaten. The sauce was so tangy!'),
+	 ('Review pizza','The pizza was disgusting. I think the pepperoni was made from rats.'),
+	 ('Review pizza','I ordered a hot-dog and was given a pizza, but I ate it anyway.'),
+	 ('Review pizza','I hate pineapple on pizza. It is a disgrace. Somehow, it worked well on this izza though.'),
+	 ('Review pizza','I ate 11 slices and threw up. The pizza was tasty in both directions.');
 
 -- the data of embedding result
 CREATE TABLE public.t_embeddings_v1 (
@@ -138,7 +117,7 @@ limit 3;
 
 
 ----------------------------------------------------------------------------------
--- step 5. Final step, let geneate a nice business report based on above finding by chat_completion
+-- step 5. Final step, let's generate a nice business report based on above finding by chat_completion
 ----------------------------------------------------------------------------------
 with
 business_question as (
@@ -202,4 +181,3 @@ from ai_report;
 SELECT 
 	send_message, chat_completion,  final_report
 from t_ai_report
-
