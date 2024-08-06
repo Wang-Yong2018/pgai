@@ -14,7 +14,7 @@ The integration of Artificial Intelligence in General Computing (aigc) is revolu
 
 ## 3 Case Study: Enhancing Customer Satisfaction in a Virtual Pizza Shop
 
-As a business analyst, you want to know why recently sell order drops from customer feedback database recenly and delivery a business report for management improvment. So, you give pgai a question by a SQL
+As a business analyst, you want to know why recently sell order drops from customer feedback database recently and delivery a business report for management improvement. So, you give pgai a question by a SQL
 ```
 why customer do not like our pizza?
 ```
@@ -39,7 +39,7 @@ In summary, customer feedback indicates major concerns regarding the quality of 
 
 ```
 
-Amazing!, isn't it?  Follow me to know what happend in the pgai.  We will introduce the rag process concept, and the case study of the pizza shop X.
+Amazing!, isn't it?  Follow me to know what happened in the pgai.  We will introduce the rag process concept, and the case study of the pizza shop X.
 
 We outline a 5-step RAG process designed to enhance CRM operations:
 Note: Retrieval-Augmented Generation (RAG) serves as the backbone of our approach, allowing us to query existing data and generate new insights. 
@@ -68,48 +68,48 @@ select pg_catalog.current_setting('ai.openai_api_key', true) as api_key;
 ```
 
 ### 3.2. Collect & Prepare Customer Voice 
-Listen to customer is key for long time success. Almost all business will listen to customer voice and records this. So, let create customer feedback data table and store the demo customer voices as record.
+Listen to customer is key for long time success. Almost all business will listen to customer voice and records this. So, let's create the customer feedback data table and store the demo customer voices as record.
 
-The customer voice about pizza will be stored in t_demo_text_v1 table. It is worked as minimal CRM table.  Below SQL command will do the jobs.
+The customer voice about pizza will be stored in pizza_reviews  table. It is worked as minimal CRM table.  Below SQL command will do the jobs.
 -- clean the history test table to initialize 
 ```sql
-DROP TABLE IF EXISTS  PUBLIC.T_DEMO_TEXT_V1 CASCADE;   -- CUSTOMER FEEDBACK STORED HERE
-DROP TABLE IF EXISTS PUBLIC.T_EMBEDDINGS_V1 CASCADE;  -- CUSTOMER FEEDBACK EMBEDDED 
-DROP TABLE IF EXISTS  PUBLIC.T_AI_REPORT CASCADE;      -- THE AI GENERATED BUSINESS REPORT
+DROP TABLE IF EXISTS  PUBLIC.pizza_reviews  CASCADE;   -- CUSTOMER FEEDBACK STORED HERE
+DROP TABLE IF EXISTS PUBLIC.pizza_reviews_embeddings CASCADE;  -- CUSTOMER FEEDBACK EMBEDDED 
+DROP TABLE IF EXISTS  PUBLIC.ai_report CASCADE;      -- THE AI GENERATED BUSINESS REPORT
 ```
 
 ```sql
-CREATE TABLE public.t_demo_text_v1 (
+CREATE TABLE public.pizza_reviews  (
 id bigserial NOT NULL,
-title text NOT NULL,
+product text NOT NULL,
 customer_message text NULL,
 text_length INTEGER GENERATED ALWAYS AS (LENGTH(customer_message)) stored,
-CONSTRAINT t_demo_text_v1_pkey PRIMARY KEY (id)
+CONSTRAINT pizza_reviews_pkey PRIMARY KEY (id)
 );
 
 ```
-Then insert data of t_demo_text_v1
+Then insert data of pizza_reviews 
 ```sql
-INSERT INTO public.t_demo_text_v1 (title,customer_message) VALUES
-	 ('Review pizza','The best pizza I''ve ever eaten. The sauce was so tangy!'),
-	 ('Review pizza','The pizza was disgusting. I think the pepperoni was made from rats.'),
-	 ('Review pizza','I ordered a hot-dog and was given a pizza, but I ate it anyway.'),
-	 ('Review pizza','I hate pineapple on pizza. It is a disgrace. Somehow, it worked well on this izza though.'),
-	 ('Review pizza','I ate 11 slices and threw up. The pizza was tasty in both directions.');
+INSERT INTO public.pizza_reviews  (product,customer_message) VALUES
+	 ('pizza','The best pizza I''ve ever eaten. The sauce was so tangy!'),
+	 ('pizza','The pizza was disgusting. I think the pepperoni was made from rats.'),
+	 ('pizza','I ordered a hot-dog and was given a pizza, but I ate it anyway.'),
+	 ('pizza','I hate pineapple on pizza. It is a disgrace. Somehow, it worked well on this izza though.'),
+	 ('pizza','I ate 11 slices and threw up. The pizza was tasty in both directions.');
 ```
 
 ### 3.3. Embedding Customer Voice
-Create the embed table for t_demo_text_v1 table for future using. It is used for stored the embedded customer voice for compare, calculate the L2 or cosine distance.
+Create the embed table for pizza_reviews  table for future using. It is used for stored the embedded customer voice for compare, calculate the L2 or cosine distance.
 ```sql
-CREATE TABLE public.t_embeddings_v1 (
+CREATE TABLE public.pizza_reviews_embeddings (
 id bigserial NOT NULL,
 text_id text NOT NULL, 
-text_content text NOT NULL, -- it is same as t_demo_text_v1
+text_content text NOT NULL, -- it is same as pizza_reviews 
 model_name text NOT NULL,
 ntoken int4 NULL,
 nlength int4 NULL,
 embedding public.vector(1536) NOT NULL,
-CONSTRAINT t_embeddings_v1_pkey PRIMARY KEY (id)
+CONSTRAINT pizza_reviews_embeddings_pkey PRIMARY KEY (id)
 );
 ```
 
@@ -121,9 +121,9 @@ select
 	'text-embedding-3-small'::text as model_name,
 	openai_embed('text-embedding-3-small',customer_message) as embedding
 from
-	t_demo_text_v1 as tt
+	pizza_reviews  as tt
 )
-insert into t_embeddings_v1 
+insert into pizza_reviews_embeddings 
 		(text_id, text_content, model_name, embedding )
 	select 
 		id, customer_message, model_name, embedding
@@ -134,7 +134,7 @@ insert into t_embeddings_v1
 Create index for query speed optimization. It is optional for small data demo. 
 Note: there are many index extension for pgai vector feature. In this case, we're using ivfflat extension.
 ```sql
-CREATE INDEX ON t_embeddings_v1 USING ivfflat (embedding vector_cosine_ops) WITH (lists='5');
+CREATE INDEX ON pizza_reviews_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists='5');
 
 ```
 Now,  all the customer voice is AI ready for further work.
@@ -148,7 +148,7 @@ In this case, We ask the first question "Why customer do not like pizza"
 The new business question could be answered via a simply SQL to pgai to complete rag process.
 pgai can help use to:
 1. Get the embedded question vector. "Why customer do not like pizza?" will be converted to numeric vector 
-2. compare the question vector to embedded history customer voice (t_embeddings_v1) with vector distance 
+2. compare the question vector to embedded history customer voice (pizza_reviews_embeddings) with vector distance 
 3. using criteria to filter most similarity customer voice. In our case, we use 3 for demo purpose. In real business, it is more complicated than that.
 ```sql 
 with
@@ -169,7 +169,7 @@ select
 	eqt.question, 
 	emt.text_content , 
 	emt.embedding <-> eqt.embedding as similarity
-from t_embeddings_v1 emt  cross join embedding_question eqt
+from pizza_reviews_embeddings emt  cross join embedding_question eqt
 order by emt.embedding <-> eqt.embedding
 limit 3;
 ```
@@ -184,45 +184,43 @@ In this step, we check the intermediate result. And find Some clue. "Disgusting,
 Now, we will do a complete process to question, to compare similarity, filter, and send to ChatGPT for generate final business report. 
 Here is the SQL code: 
 ```sql
+-- create a build_pizza_report function to put a ai instruction in it, and call it by one sql command.
+CREATE OR REPLACE FUNCTION build_pizza_report(_question text, _n_criteria smallint)
+RETURNS SETOF ai_report AS
+$$
+BEGIN
+RETURN QUERY
+    
 with
-business_question as (
-	select question 
-	from 
-		(values 
-			('why customer do not like our pizza?')
-			)as t(question)	
-)
-, embedding_question as (
+embedding_question as (
 	select 
-		question, openai_embed('text-embedding-3-small',question) as embedding 
-	from 
-		business_question
-), reasons as (
+		_question as question, openai_embed('text-embedding-3-small',_question) as embedding
+	), 
+reasons as (
 	select
 		eqt.question, 
 		emt.text_content , 
 		emt.embedding <-> eqt.embedding as similarity
-	from t_embeddings_v1 emt  cross join embedding_question eqt
+	from pizza_reviews_embeddings emt  cross join embedding_question eqt
 	order by 
 		emt.embedding <-> eqt.embedding
-		limit 3
-)
+		limit _n_criteria
+	)
 ,agg_resons as (
  	select 
  		question,  jsonb_pretty(jsonb_agg(text_content)) as reasons
  	from reasons
  	group by question
-)
+	)
 ,report_needs as (
-select 
-chr(10)||'// 1. requirements:
-// 1.1 generate a business report to answer user question with provided data.
-// 1.2 The report should be markdown format and less than 300 words' || chr(10) as report_needs,
-chr(10)||'// 2. data' || chr(10)as data_needs,
-chr(10)||'// 3. user question'|| chr(10)as user_question
- )
+	select 
+	chr(10)||'// 1. requirements:
+	// 1.1 generate a business report to answer user question with provided data.
+	// 1.2 The report should be markdown format and less than 300 words' || chr(10) as report_needs,
+	chr(10)||'// 2. data' || chr(10)as data_needs,
+	chr(10)||'// 3. user question'|| chr(10)as user_question
+ 	)
 ,ai_report as (
-
 		select 
 			report_needs || data_needs ||  reasons  ||user_question || question as send_message,
 			openai_chat_complete(
@@ -240,32 +238,45 @@ select
 	send_message, chat_completion,
 	replace(chat_completion['choices'][0]['message']['content']::text,'\n',chr(10)) as final_report,
 	now() as create_time
-into t_ai_report
+--into ai_report
 from ai_report;
 
-SELECT 
-	send_message, chat_completion,  final_report
-from t_ai_report
+    
+END;
+$$
+LANGUAGE plpgsql;
+
 ```
 
+```sql
+---- call the build_pizza_report now
+
+insert into ai_report (send_message, chat_completion,final_report,create_time) 
+select  
+  send_message, chat_completion,final_report,create_time
+from 
+	build_pizza_report('why customer dont like our pizza'::text,3::int2);
+select * from ai_report ;
+
+```
 Again, we can get the answer by pgai with Large language mode.
 Here is the screen capture:
 ![](rag_demo_pizza_business_report.png)
 
 ## 4. Conclusion
 ### 4.1 Cutting edge tools
-For the 5 records of pizza shop case, we can find the history customer voice data be used and augmented by AI. If your business stored huge data, you do need consider using aigc with your data to delivery further value. Pizza shop case is just a virtual case. What if you're running an ecommercial business or digital plants, the data is voice, the large language mode could hear it and translate to business language. 
+For the 5 records of pizza shop case, we can find the history customer voice data be used and augmented by AI. If your business stored huge data, you do need consider using aigc with your data to delivery further value. Pizza shop case is just a virtual case. What if you're running an e-commercial business or digital plants, the data is voice, the large language mode could hear it and translate to business language. 
 	  
 ### 4.2 Proved platform.
-	  pgai is tools based on postgresql platformat and timescaled database. to combined matured platform with cutting edge tools, it is a fantastical idea. 
-	- I worked as waste-to-energy plants digital transfomer. In the past, Lean, Sixsigma concetp were used together with digital tools such as postgresql to help customer reduce cost, improve operation efficiency.  huge sensor data collected and processed with reliable database and advanced features. Now, aigc opened a new door of opportunites to better service to customer.
+	  pgai is tools based on postgresql platform and timescale database. to combined matured platform with cutting edge tools, it is a fantastical idea. 
+	- I worked as waste-to-energy plants digital transformer. In the past, Lean, Six sigma concept were used together with digital tools such as postgresql to help customer reduce cost, improve operation efficiency.  huge sensor data collected and processed with reliable database and advanced features. Now, aigc opened a new door of opportunities to better service to customer.
 ## 5. Call to Action
 Explore the resources and tools mentioned in this blog to enhance your own CRM operations. 
 Pls try to use pgai  to explore the new door of data utilization. [[#7. Resources#7.1 reference]]]
 ## 6. Who am I 
 I am a digital transformation expert. By using digital way help customer to improve operation efficient and reduce cost. Especially, apply digital six sigma and lean idea to some incineration power plants to improve OEE and predict maintenance.  [www.linkedin.cn](https://www.linkedin.cn/incareer/in/yong-wang-4695221b)
  
- Within aigc enhancement, a new door opened. The blog was wroten based on virtual pizza shop data but demo a full process and customer satisfaction report and help to improve quality.
+ Within aigc enhancement, a new door opened. The blog was wrote based on virtual pizza shop data but demo a full process and customer satisfaction report and help to improve quality.
 
 This blog was first published at 
 [Enhancing Customer Satisfaction in Pizza Shops with RAG - A deep dive of Integrated pgai](https://github.com/timescale/pgai/blob/main/docs/pgai_rag_demo_why_customer_donot_like_pizza.md)
@@ -274,7 +285,8 @@ This blog was first published at
 ### 7.1 reference
 - [pgai](https://github.com/timescale/pgai)
 - [full demo sql used in this blog](https://github.com/timescale/pgaiexamples/rag_report_demo_why_some_customers_donot_like_pizza.sql)
-pizza dataset — it was copied from website, might be Gemini or OpenAI forum. But I can not find the original source link. After check with ChatGPT 4o, the text is common expression to pizza, not creative work.
+
+
 ### 7.2 the demo case input, output,tools
 #### Input 
 It is a table with feedback of customer pizza experience. Some are good, some are bad. 
@@ -282,7 +294,7 @@ It is a table with feedback of customer pizza experience. Some are good, some ar
 The best pizza I've ever eaten. The sauce was so tangy!
 The pizza was disgusting. I think the pepperoni was made from rats.
 I ordered a hot-dog and was given a pizza, but I ate it anyway.
-I hate pineapple on pizza. It is a disgrace. Somehow, it worked well on this izza though.
+I hate pineapple on pizza. It is a disgrace. Somehow, it worked well on this pizza though.
 I ate 11 slices and threw up. The pizza was tasty in both directions.
 ```
 #### Output
