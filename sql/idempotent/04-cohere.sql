@@ -50,7 +50,7 @@ as $python$
     response = client.tokenize(text=_text, model=_model)
     return response.tokens
 $python$
-language plpython3u volatile parallel safe security invoker
+language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -66,7 +66,7 @@ as $python$
     response = client.detokenize(tokens=_tokens, model=_model)
     return response.text
 $python$
-language plpython3u volatile parallel safe security invoker
+language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -93,7 +93,7 @@ as $python$
     response = client.embed(texts=[_input], model=_model, **args)
     return response.embeddings[0]
 $python$
-language plpython3u volatile parallel safe security invoker
+language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -122,7 +122,7 @@ as $python$
     response = client.classify(inputs=_inputs, model=_model, **args)
     return response.json()
 $python$
-language plpython3u volatile parallel safe security invoker
+language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -152,9 +152,9 @@ as $python$
         args["truncate"] = _truncate
     response = client.classify(inputs=_inputs, model=_model, **args)
     for x in response.classifications:
-        yield (x.input, x.prediction, x.confidence)
+        yield x.input, x.prediction, x.confidence
 $python$
-language plpython3u volatile parallel safe security invoker
+language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -167,6 +167,7 @@ create or replace function ai.cohere_rerank
 , _documents jsonb
 , _api_key text default null
 , _top_n integer default null
+, _rank_fields text[] default null
 , _return_documents bool default null
 , _max_chunks_per_doc int default null
 ) returns jsonb
@@ -178,6 +179,8 @@ as $python$
     args = {}
     if _top_n is not None:
         args["top_n"] = _top_n
+    if _rank_fields is not None:
+        args["rank_fields"] = _rank_fields
     if _return_documents is not None:
         args["return_documents"] = _return_documents
     if _max_chunks_per_doc is not None:
@@ -185,7 +188,7 @@ as $python$
     _documents_1 = json.loads(_documents)
     response = client.rerank(model=_model, query=_query, documents=_documents_1, **args)
     return response.json()
-$python$ language plpython3u volatile parallel safe security invoker
+$python$ language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -218,7 +221,7 @@ from pg_catalog.jsonb_to_recordset
     , _max_chunks_per_doc=>_max_chunks_per_doc
     ) operator(pg_catalog.->) 'results'
 ) x("index" int, "document" jsonb, relevance_score float8)
-$func$ language sql volatile parallel safe security invoker
+$func$ language sql immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 

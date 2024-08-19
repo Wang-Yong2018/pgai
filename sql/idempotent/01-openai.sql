@@ -11,7 +11,7 @@ as $python$
     tokens = encoding.encode(_text)
     return tokens
 $python$
-language plpython3u strict volatile parallel safe security invoker
+language plpython3u strict immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -27,7 +27,7 @@ as $python$
     content = encoding.decode(_tokens)
     return content
 $python$
-language plpython3u strict volatile parallel safe security invoker
+language plpython3u strict immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -35,7 +35,7 @@ set search_path to pg_catalog, pg_temp
 -- openai_list_models
 -- list models supported on the openai platform
 -- https://platform.openai.com/docs/api-reference/models/list
-create or replace function ai.openai_list_models(_api_key text default null)
+create or replace function ai.openai_list_models(_api_key text default null, _base_url text default null)
 returns table
 ( id text
 , created timestamptz
@@ -44,7 +44,7 @@ returns table
 as $python$
     #ADD-PYTHON-LIB-DIR
     import ai.openai
-    for tup in ai.openai.list_models(plpy, _api_key):
+    for tup in ai.openai.list_models(plpy, _api_key, _base_url):
         yield tup
 $python$
 language plpython3u volatile parallel safe security invoker
@@ -59,16 +59,17 @@ create or replace function ai.openai_embed
 ( _model text
 , _input text
 , _api_key text default null
+, _base_url text default null
 , _dimensions int default null
 , _user text default null
 ) returns @extschema:vector@.vector
 as $python$
     #ADD-PYTHON-LIB-DIR
     import ai.openai
-    for tup in ai.openai.embed(plpy, _model, _input, api_key=_api_key, dimensions=_dimensions, user=_user):
+    for tup in ai.openai.embed(plpy, _model, _input, api_key=_api_key, base_url=_base_url, dimensions=_dimensions, user=_user):
         return tup[1]
 $python$
-language plpython3u volatile parallel safe security invoker
+language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -80,6 +81,7 @@ create or replace function ai.openai_embed
 ( _model text
 , _input text[]
 , _api_key text default null
+, _base_url text default null
 , _dimensions int default null
 , _user text default null
 ) returns table
@@ -89,10 +91,10 @@ create or replace function ai.openai_embed
 as $python$
     #ADD-PYTHON-LIB-DIR
     import ai.openai
-    for tup in ai.openai.embed(plpy, _model, _input, api_key=_api_key, dimensions=_dimensions, user=_user):
+    for tup in ai.openai.embed(plpy, _model, _input, api_key=_api_key, base_url=_base_url, dimensions=_dimensions, user=_user):
         yield tup
 $python$
-language plpython3u volatile parallel safe security invoker
+language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -104,16 +106,17 @@ create or replace function ai.openai_embed
 ( _model text
 , _input int[]
 , _api_key text default null
+, _base_url text default null
 , _dimensions int default null
 , _user text default null
 ) returns @extschema:vector@.vector
 as $python$
     #ADD-PYTHON-LIB-DIR
     import ai.openai
-    for tup in ai.openai.embed(plpy, _model, _input, api_key=_api_key, dimensions=_dimensions, user=_user):
+    for tup in ai.openai.embed(plpy, _model, _input, api_key=_api_key, base_url=_base_url, dimensions=_dimensions, user=_user):
         return tup[1]
 $python$
-language plpython3u volatile parallel safe security invoker
+language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;
 
@@ -125,6 +128,7 @@ create or replace function ai.openai_chat_complete
 ( _model text
 , _messages jsonb
 , _api_key text default null
+, _base_url text default null
 , _frequency_penalty float8 default null
 , _logit_bias jsonb default null
 , _logprobs boolean default null
@@ -144,7 +148,7 @@ create or replace function ai.openai_chat_complete
 as $python$
     #ADD-PYTHON-LIB-DIR
     import ai.openai
-    client = ai.openai.make_client(plpy, _api_key)
+    client = ai.openai.make_client(plpy, _api_key, _base_url)
     import json
 
     _messages_1 = json.loads(_messages)
@@ -202,14 +206,15 @@ create or replace function ai.openai_moderate
 ( _model text
 , _input text
 , _api_key text default null
+, _base_url text default null
 ) returns jsonb
 as $python$
     #ADD-PYTHON-LIB-DIR
     import ai.openai
-    client = ai.openai.make_client(plpy, _api_key)
+    client = ai.openai.make_client(plpy, _api_key, _base_url)
     moderation = client.moderations.create(input=_input, model=_model)
     return moderation.model_dump_json()
 $python$
-language plpython3u volatile parallel safe security invoker
+language plpython3u immutable parallel safe security invoker
 set search_path to pg_catalog, pg_temp
 ;

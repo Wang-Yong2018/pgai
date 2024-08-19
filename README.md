@@ -11,7 +11,7 @@
 </div>
 
 pgai simplifies the process of building [search](https://en.wikipedia.org/wiki/Similarity_search), and
-[Retrieval Augmented Generation](https://en.wikipedia.org/wiki/Prompt_engineering#Retrieval-augmented_generation)(RAG) AI applications with PostgreSQL.
+[Retrieval Augmented Generation](https://en.wikipedia.org/wiki/Prompt_engineering#Retrieval-augmented_generation) (RAG) AI applications with PostgreSQL.
 
 pgai brings embedding and generation AI models closer to the database. With pgai, you can now do the following directly from within PostgreSQL in a SQL query:
 
@@ -70,7 +70,7 @@ To install pgai from source on a PostgreSQL server:
      - **Standard installation**: use one of the pip [supported methods][pip].
      - **Virtual environment**: usually, pip is automatically installed if you are working in a
        [Python virtual environment][python-virtual-environment]. If you are running PostgreSQL in a virtual
-       environement, pgai requires several python packages. Set the `PYTHONPATH` and `VIRTUAL_ENV`
+       environment, pgai requires several python packages. Set the `PYTHONPATH` and `VIRTUAL_ENV`
        environment variables before you start your PostgreSQL server.
 
        ```bash
